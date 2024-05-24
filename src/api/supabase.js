@@ -1,10 +1,33 @@
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
+
+const signInAnonymously = async () => {
+  const { error } = await supabase.auth.signInWithOtp({ email: 'anonymous@domain.com' });
+  if (error) throw new Error(error.message);
+};
+
+// Ensure user is signed in anonymously on load
+useEffect(() => {
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      await signInAnonymously();
+    }
+  };
+  checkUser();
+}, []);
 
 // Helper function to handle Supabase queries
 const fromSupabase = async (query) => {
