@@ -1,23 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Container, VStack, Box, Text, Input, Button, HStack, IconButton, Spinner, Alert, AlertIcon } from "@chakra-ui/react";
 import { usePosts, useAddPost, useAddReaction } from '../api/supabase';
 import { FaThumbsUp, FaThumbsDown, FaLaugh, FaSadCry } from "react-icons/fa";
+import { supabase } from '../api/supabase';
 
 const Index = () => {
   const { data: posts, isLoading: postsLoading, isError: postsError } = usePosts();
   const addPostMutation = useAddPost();
   const addReactionMutation = useAddReaction();
   const [newPost, setNewPost] = useState("");
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || 'anonymous');
+    };
+    fetchUser();
+  }, []);
 
   const addPost = () => {
     if (newPost.trim() !== "") {
-      addPostMutation.mutate({ title: newPost, body: newPost, author_id: 'anonymous' });
+      addPostMutation.mutate({ title: newPost, body: newPost, author_id: userId });
       setNewPost("");
     }
   };
 
   const addReaction = (postId, emoji) => {
-    addReactionMutation.mutate({ post_id: postId, user_id: 'anonymous', emoji });
+    addReactionMutation.mutate({ post_id: postId, user_id: userId, emoji });
   };
 
   if (postsLoading) return <Spinner />;
